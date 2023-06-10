@@ -17,5 +17,5 @@ sudo apt install python3-flask -y
 
 git clone https://github.com/AmitItzhaki252/CloudHasher.git
 
-cd CloudHasher
+cd CloudHasher/Endpoint
 sudo python3 -m flask run --host=0.0.0.0
