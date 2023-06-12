@@ -78,8 +78,8 @@ $PUBLIC_IP2 = $Describe_Instance2_Convert.Reservations[0].Instances[1].PublicIpA
 
 # Creates the public IPs file
 $IPs = @{
-    IP1 = $PUBLIC_IP1,
-    IP2 = $PUBLIC_IP2,
+    IP1 = $PUBLIC_IP1
+    IP2 = $PUBLIC_IP2
 	MY = $MY_IP
 }
 
