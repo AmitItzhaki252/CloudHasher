@@ -19,7 +19,7 @@ results = queue.Queue()
 global destination_ip
 global manager_ip
 
-with open("public_ips.json", "r") as file:
+with open("/home/ubuntu/public_ips.json", "r") as file:
     ips_json = file.read()
 
 # Parse the JSON content

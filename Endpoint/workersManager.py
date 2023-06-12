@@ -59,8 +59,8 @@ def get_public_ip():
 
 def start_worker(manager_ip, my_ip):
     # Read AWS credentials from file
-    credentials_path = os.path.expanduser("credentials")
-    config_path = os.path.expanduser("config")
+    credentials_path = os.path.expanduser("/home/ubuntu/credentials")
+    config_path = os.path.expanduser("/home/ubuntu/config")
 
     # Set AWS credentials and region using environment variables
     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = credentials_path
@@ -192,7 +192,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         print(f"Command failed with error: {error_message}")
 
     stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv credentials /home/ubuntu')
+        'sudo mv /home/ubuntu/credentials /home/ubuntu')
 
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -204,7 +204,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
     
-    stdin, stdout, stderr = ssh.exec_command('sudo mv config /home/ubuntu')
+    stdin, stdout, stderr = ssh.exec_command('sudo mv /home/ubuntu/config /home/ubuntu')
 
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
