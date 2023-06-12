@@ -6,3 +6,4 @@ Worker/worker_public_ips.json
 *.pyc
 *.pyc
 StartScripts/public_ips.json
+*.pyc

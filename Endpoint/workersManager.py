@@ -6,6 +6,8 @@ import paramiko
 import threading
 import os
 import stat
+import configparser
+import re
 
 global maxWorkersNumber
 global currentWorkersNumber
@@ -15,6 +17,33 @@ currentWorkersNumber = 0
 
 global my_ip
 
+# Read the configuration file
+config = configparser.ConfigParser()
+config.read('config')
+
+# Get the region value from the configuration file
+try:
+    region = config.get('default', 'region')
+except:
+    config.read('C:\git\CloudHasher\Endpoint\config')
+    region = config.get('default', 'region')
+
+# Set the AWS region
+os.environ['AWS_DEFAULT_REGION'] = region
+
+try:
+    with open('credentials', 'r') as f:
+        aws_credentials = f.read()
+except:
+    with open('C:\git\CloudHasher\Endpoint\credentials', 'r') as f:
+        aws_credentials = f.read()
+
+access_key = re.search(r'aws_access_key_id\s*=\s*(\S+)', aws_credentials).group(1)
+secret_key = re.search(r'aws_secret_access_key\s*=\s*(\S+)', aws_credentials).group(1)
+
+# Set AWS credentials and region as environment variables
+os.environ['AWS_ACCESS_KEY_ID'] = access_key
+os.environ['AWS_SECRET_ACCESS_KEY'] = secret_key
 
 def message_added(queue_len, manager_ip):
     global currentWorkersNumber
@@ -35,15 +64,15 @@ def decrease_workers():
 def start_new_worker(manager_ip):
     global currentWorkersNumber
 
-    try:
-        my_ip = get_public_ip()
-        start_worker(manager_ip, my_ip)
-        print('Worker started')
-    except:
-        print('creating worker failed')
-        currentWorkersNumber -= 1
-        if currentWorkersNumber == 0:
-            start_new_worker(manager_ip)
+    # try:
+    my_ip = get_public_ip()
+    start_worker(manager_ip, my_ip)
+    print('Worker started')
+    # except:
+    #     print('creating worker failed')
+    #     currentWorkersNumber -= 1
+    #     if currentWorkersNumber == 0:
+    #         start_new_worker(manager_ip)
 
 
 def get_public_ip():
@@ -58,26 +87,46 @@ def get_public_ip():
 
 
 def start_worker(manager_ip, my_ip):
-    # Read AWS credentials from file
-    credentials_path = os.path.expanduser("/home/ubuntu/credentials")
-    config_path = os.path.expanduser("/home/ubuntu/config")
+    # # Read AWS credentials from file
+    # credentials_path = os.path.expanduser("/home/ubuntu/credentials")
+    # print(credentials_path)
+    # config_path = os.path.expanduser("/home/ubuntu/credentials")
 
-    # Set AWS credentials and region using environment variables
-    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = credentials_path
-    os.environ["AWS_CONFIG_FILE"] = config_path
+    # # Set AWS credentials and region using environment variables
+    # os.environ["AWS_SHARED_CREDENTIALS_FILE"] = credentials_path
+    # os.environ["AWS_CONFIG_FILE"] = config_path
 
-    print(os.environ["AWS_SHARED_CREDENTIALS_FILE"])
-    print(os.environ["AWS_CONFIG_FILE"])
+    # print(os.environ["AWS_SHARED_CREDENTIALS_FILE"])
+    # print(os.environ["AWS_CONFIG_FILE"])
 
-    # Create an EC2 client
-    ec2 = boto3.client('ec2')
+    # # Create an EC2 client
+    # try:
+    #     ec2 = boto3.client('ec2')
+        
+    #     # Generate a key pair
+    #     key_name = f"Cloud-Computing-{int(time.time())}"
+    #     key_response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
+    #     key_pem = f"{key_name}.pem"
+    #     print('key was created')
+    # except:
+    #     # Read AWS credentials from file
+    #     credentials_path = os.path.expanduser("C:\git\CloudHasher\Endpoint\credentials")
+    #     print(credentials_path)
+    #     config_path = os.path.expanduser("C:\git\CloudHasher\Endpoint\config")
 
+    #     # Set AWS credentials and region using environment variables
+    #     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = credentials_path
+    #     os.environ["AWS_CONFIG_FILE"] = config_path
+        
+    #     ec2 = boto3.client('ec2')
+        
     # Generate a key pair
+    ec2 = boto3.client('ec2')
     key_name = f"Cloud-Computing-{int(time.time())}"
     key_response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
     key_pem = f"{key_name}.pem"
     print('key was created')
-
+        
     # Save the key pair to a file
     with open(key_pem, 'w') as key_file:
         key_file.write(key_response['KeyMaterial'].strip())
@@ -190,6 +239,20 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     else:
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
+        
+        stdin, stdout, stderr = ssh.exec_command(
+        'sudo mv C:\git\CloudHasher\Endpoint\worker_public_ips.json /home/ubuntu')
+
+        # Wait for the command to complete
+        exit_status = stdout.channel.recv_exit_status()
+
+        # Print the action result
+        if exit_status == 0:
+            print("Command executed successfully")
+        else:
+            error_message = stderr.read().decode('utf-8').strip()
+            print(f"Command failed with error: {error_message}")
+        
 
     stdin, stdout, stderr = ssh.exec_command(
         'sudo mv /home/ubuntu/credentials /home/ubuntu')
@@ -203,6 +266,20 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     else:
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
+        
+        stdin, stdout, stderr = ssh.exec_command(
+        'sudo mv C:\git\CloudHasher\Endpoint\credentials /home/ubuntu')
+
+        # Wait for the command to complete
+        exit_status = stdout.channel.recv_exit_status()
+
+        # Print the action result
+        if exit_status == 0:
+            print("Command executed successfully")
+        else:
+            error_message = stderr.read().decode('utf-8').strip()
+            print(f"Command failed with error: {error_message}")
+        
     
     stdin, stdout, stderr = ssh.exec_command('sudo mv /home/ubuntu/config /home/ubuntu')
 
@@ -215,6 +292,19 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     else:
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
+        
+        stdin, stdout, stderr = ssh.exec_command(
+        'sudo mv C:\git\CloudHasher\Endpoint\config /home/ubuntu')
+
+        # Wait for the command to complete
+        exit_status = stdout.channel.recv_exit_status()
+
+        # Print the action result
+        if exit_status == 0:
+            print("Command executed successfully")
+        else:
+            error_message = stderr.read().decode('utf-8').strip()
+            print(f"Command failed with error: {error_message}")
     
     
     stdin, stdout, stderr = ssh.exec_command(
@@ -229,8 +319,33 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     else:
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
+        
+        stdin, stdout, stderr = ssh.exec_command(
+        'sudo mv C:\git\CloudHasher\Endpoint\InstallWorker.sh /home/ubuntu')
+
+        # Wait for the command to complete
+        exit_status = stdout.channel.recv_exit_status()
+
+        # Print the action result
+        if exit_status == 0:
+            print("Command executed successfully")
+        else:
+            error_message = stderr.read().decode('utf-8').strip()
+            print(f"Command failed with error: {error_message}")
 
     ssh.exec_command("sudo bash /home/ubuntu/InstallWorker.sh")
+    
+    # Wait for the command to complete
+    exit_status = stdout.channel.recv_exit_status()
+        
+    # Print the action result
+    if exit_status == 0:
+        print("Command executed successfully")
+    else:
+        error_message = stderr.read().decode('utf-8').strip()
+        print(f"Command failed with error: {error_message}")
+        
+        ssh.exec_command("sudo bash /home/ubuntu/InstallWorker.sh")
     
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
