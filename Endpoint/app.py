@@ -80,7 +80,7 @@ def enqueue():
     data = base64.b64encode(data).decode('utf-8')
 
     input_queue.put({"workId": work_id, "iterations": iterations,
-                     "data": data, "destinationIp": destination_ip})
+                     "data": data, "destinationIp": destination_ip, "gotData": True})
 
     message_added(input_queue.qsize(), manager_ip)
 
@@ -105,7 +105,7 @@ def dequeue():
         data = input_queue.get(timeout=10)
     except:
         print('No data is waiting for work')
-        return json.dumps(False, indent=4, sort_keys=True, default=str)
+        return json.dumps({"gotData": False}, indent=4, sort_keys=True, default=str)
 
     return json.dumps(data, indent=4, sort_keys=True, default=str)
 

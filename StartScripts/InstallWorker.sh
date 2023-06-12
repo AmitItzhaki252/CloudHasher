@@ -13,6 +13,7 @@ sudo pip install Flask-Swagger
 sudo pip install Flask-Swagger-UI
 sudo pip install flasgger
 sudo pip install paramiko
+sudo pip install requests
 
 python3 -c "import flask"
 
