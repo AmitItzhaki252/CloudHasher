@@ -17,22 +17,20 @@ currentWorkersNumber = 0
 
 global my_ip
 
-# Read the configuration file
-config = configparser.ConfigParser()
-config.read('/home/ubuntu/credentials/config')
-
-# Get the region value from the configuration file
 try:
-    region = config.get('default', 'region')
+    with open('/home/ubuntu/config', 'r') as f:
+        config = f.read()
 except:
-    config.read('C:\git\CloudHasher\Endpoint\config')
-    region = config.get('default', 'region')
+    with open('C:\git\CloudHasher\Endpoint\config', 'r') as f:
+        config = f.read()
+
+region = re.search(r'region\s*=\s*(\S+)', config).group(1)
 
 # Set the AWS region
 os.environ['AWS_DEFAULT_REGION'] = region
 
 try:
-    with open('/home/ubuntu/credentials/credentials', 'r') as f:
+    with open('/home/ubuntu/credentials', 'r') as f:
         aws_credentials = f.read()
 except:
     with open('C:\git\CloudHasher\Endpoint\credentials', 'r') as f:
