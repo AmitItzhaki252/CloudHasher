@@ -76,11 +76,29 @@ $Describe_Instance2 = aws ec2 describe-instances --instance-ids $INSTANCE2_ID
 $Describe_Instance2_Convert = $Describe_Instance2 | ConvertFrom-Json
 $PUBLIC_IP2 = $Describe_Instance2_Convert.Reservations[0].Instances[1].PublicIpAddress
 
+# Creates the public IPs file
+$IPs = @{
+    IP1 = $PUBLIC_IP1,
+    IP2 = $PUBLIC_IP2,
+	MY = $MY_IP
+}
+
+# Convert the IPs to JSON format
+$IPsJson = $IPs | ConvertTo-Json -Depth 4
+
+# Save the IPs to a file
+$IPsJson | Set-Content -Path "public_ips.json"
 
 # Copy script and execute it on instance 1
+scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" public_ips.json ubuntu@${PUBLIC_IP1}:/home/ubuntu
+scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./credentials ubuntu@${PUBLIC_IP1}:/home/ubuntu
+scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./config ubuntu@${PUBLIC_IP1}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./InstallEndpoint.sh ubuntu@${PUBLIC_IP1}:/home/ubuntu
 ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${PUBLIC_IP1} "sudo bash /home/ubuntu/InstallEndpoint.sh"
 
 # Copy script and execute it on instance 2
+scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" public_ips.json ubuntu@${PUBLIC_IP2}:/home/ubuntu
+scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./credentials ubuntu@${PUBLIC_IP2}:/home/ubuntu
+scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./config ubuntu@${PUBLIC_IP2}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./InstallEndpoint.sh ubuntu@${PUBLIC_IP2}:/home/ubuntu
 ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${PUBLIC_IP2} "sudo bash /home/ubuntu/InstallEndpoint.sh"

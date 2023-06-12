@@ -1,57 +1,193 @@
-from datetime import datetime
-import random
 import json
-import math
 from flask import Flask, request
-
-global currentTicketId
-currentTicketId = random.randint(100000, 999999)
-
-global parkingsData
-parkingsData = {}
+import uuid
+from flask import Flask
+from flasgger import Swagger, swag_from
+import base64
+from workersManager import get_public_ip, message_added, decrease_workers
+import queue
 
 app = Flask(__name__)
 
+swagger = Swagger(app)
 
-@app.route("/entry", methods=['POST'])
-def entry():
-    global currentTicketId
-    global parkingsData
+global input_queue
+global results
+input_queue = queue.Queue()
+results = queue.Queue()
 
-    ticketId = currentTicketId
-    currentTicketId += 1
-    parkingData = ParkingData(
-        request.args['plate'], request.args['parkingLot'], datetime.now(), ticketId)
+global destination_ip
+global manager_ip
 
-    parkingsData[str(parkingData.ticketId)] = parkingData
+with open("public_ips.json", "r") as file:
+    ips_json = file.read()
 
-    return json.dumps(parkingData.ticketId)
+# Parse the JSON content
+ips = json.loads(ips_json)
+
+# Access the IP1 and IP2 values
+ip1 = ips["IP1"]
+ip2 = ips["IP2"]
+manager_ip = ips["MY"]
+
+if get_public_ip() == ip1:
+    destination_ip = ip2
+else:
+    destination_ip = ip1
 
 
-@app.route("/exit", methods=['POST'])
-def exit():
-    global parkingsData
-
-    ticketId = request.args['ticketId']
-    parkingData = parkingsData[ticketId]
-
-    totalParkTime = datetime.now()-parkingData.parkingTime
-    totalParkTimeIn15Minutes = math.floor(totalParkTime.total_seconds() / 60 / 15)
-    charge = 2.5 * totalParkTimeIn15Minutes
-
-    exitData = {
-        'licensePlate': parkingData.plate,
-        'totalParkedTime': totalParkTime,
-        'parkingLotId': parkingData.parkingLot,
-        'charge': charge
+@app.route("/enqueue", methods=['PUT'])
+@swag_from({
+    'consumes': ['application/octet-stream'],
+    'parameters': [
+        {
+            'name': 'iterations',
+            'in': 'query',
+            'type': 'integer',
+            'required': True,
+            'description': 'Number of iterations'
+        },
+        {
+            'name': 'body',
+            'in': 'body',
+            'schema': {
+                'type': 'string',
+                'type': 'binary'
+            },
+            'description': 'data'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Successfully enqueued data',
+        }
     }
+})
+def enqueue():
+    global input_queue
+    global destination_ip
+    global manager_ip
 
-    return json.dumps(exitData, indent=4, sort_keys=True, default=str)
+    iterations = request.args['iterations']
+    data = request.get_data()
+    work_id = uuid.uuid4()
+
+    if data is None:
+        data = []
+        print('received empty data')
+        return 'data was empty'
+
+    data = base64.b64encode(data).decode('utf-8')
+
+    input_queue.put({"workId": work_id, "iterations": iterations,
+                     "data": data, "destinationIp": destination_ip})
+
+    message_added(input_queue.qsize(), manager_ip)
+
+    return 'Enqueued successfuly'
 
 
-class ParkingData:
-    def __init__(self, plate, parkingLot, parkingTime, ticketId):
-        self.plate = plate
-        self.parkingLot = parkingLot
-        self.parkingTime = parkingTime
-        self.ticketId = ticketId
+@app.route("/dequeue", methods=['GET'])
+@swag_from({
+    'responses': {
+        200: {
+            'description': 'Successfully enqueued data',
+            'scheme': {
+                'type': 'object'
+            }
+        }
+    }
+})
+def dequeue():
+    global input_queue
+
+    try:
+        data = input_queue.get(timeout=10)
+    except:
+        print('No data is waiting for work')
+        return json.dumps(False, indent=4, sort_keys=True, default=str)
+
+    return json.dumps(data, indent=4, sort_keys=True, default=str)
+
+
+@app.route("/completed", methods=['POST'])
+@swag_from({
+    'consumes': ['application/json'],
+    'parameters': [
+        {
+            'name': 'body',
+            'in': 'body',
+            'schema': {
+                'type': 'object'
+            },
+            'description': 'data'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Successfully enqueued data',
+        }
+    }
+})
+def completed():
+    global results
+
+    data = request.get_json()
+    results.put(data)
+
+    return 'Successfully enqueued data'
+
+
+@app.route("/pullCompleted", methods=['POST'])
+@swag_from({
+    'parameters': [
+        {
+            'name': 'top',
+            'in': 'query',
+            'type': 'integer',
+            'required': True,
+            'description': 'Number of messages to pop'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Pulled data',
+            'scheme': {
+                'type': 'object'
+            }
+        }
+    }
+})
+def pullCompleted():
+    global results
+
+    top = int(request.args['top'])
+
+    return_results = []
+    for _ in range(top):
+        try:
+            result = results.get(timeout=1)
+            return_results.append(result)
+        except:
+            print("Requested more items then ready")
+            return json.dumps(return_results, indent=4, sort_keys=True, default=str)
+
+    return json.dumps(return_results, indent=4, sort_keys=True, default=str)
+
+
+@app.route("/killWorker", methods=['POST'])
+@swag_from({
+    'responses': {
+        200: {
+            'description': 'Successfully killed worker',
+        }
+    }
+})
+def kill_worker():
+    decrease_workers()
+
+    return 'Successfully killed worker'
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
