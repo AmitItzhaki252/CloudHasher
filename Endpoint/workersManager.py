@@ -19,7 +19,7 @@ global my_ip
 
 # Read the configuration file
 config = configparser.ConfigParser()
-config.read('config')
+config.read('/home/ubuntu/credentials/config')
 
 # Get the region value from the configuration file
 try:
@@ -32,7 +32,7 @@ except:
 os.environ['AWS_DEFAULT_REGION'] = region
 
 try:
-    with open('credentials', 'r') as f:
+    with open('/home/ubuntu/credentials/credentials', 'r') as f:
         aws_credentials = f.read()
 except:
     with open('C:\git\CloudHasher\Endpoint\credentials', 'r') as f:
@@ -241,7 +241,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         print(f"Command failed with error: {error_message}")
         
         stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\git\CloudHasher\Endpoint\worker_public_ips.json /home/ubuntu')
+        'sudo mv C:\\git\\CloudHasher\\Endpoint\\worker_public_ips.json /home/ubuntu')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -268,7 +268,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         print(f"Command failed with error: {error_message}")
         
         stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\git\CloudHasher\Endpoint\credentials /home/ubuntu')
+        'sudo mv C:\\git\\CloudHasher\\Endpoint\\credentials /home/ubuntu')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -294,7 +294,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         print(f"Command failed with error: {error_message}")
         
         stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\git\CloudHasher\Endpoint\config /home/ubuntu')
+        'sudo mv C:\\git\\CloudHasher\\Endpoint\\config /home/ubuntu')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -321,7 +321,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         print(f"Command failed with error: {error_message}")
         
         stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\git\CloudHasher\Endpoint\InstallWorker.sh /home/ubuntu')
+        'sudo mv C:\\git\\CloudHasher\\Endpoint\\InstallWorker.sh /home/ubuntu')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
