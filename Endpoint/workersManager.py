@@ -83,7 +83,7 @@ def start_worker(manager_ip, my_ip):
         key_file.write(key_response['KeyMaterial'].strip())
 
     # Set permissions for the key pair file
-    os.chmod(key_pem, stat.S_IRUSR | stat.S_IWUSR)
+    os.chmod(key_pem, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
     # Create a security group
     security_group_name = f"scriptSG-{int(time.time())}"
