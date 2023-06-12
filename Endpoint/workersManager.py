@@ -177,28 +177,69 @@ def start_worker(manager_ip, my_ip):
 
 def run_scripts_on_remote(ssh, public_ip1, key_pem):
     ssh.connect(public_ip1, username='ubuntu', key_filename=key_pem)
-    #sftp.put("worker_public_ips.json", "/home/ubuntu")
+    
     stdin, stdout, stderr = ssh.exec_command(
         'sudo mv worker_public_ips.json /home/ubuntu')
 
     # Wait for the command to complete
-    stdout.channel.recv_exit_status()
+    exit_status = stdout.channel.recv_exit_status()
+    
+    # Print the action result
+    if exit_status == 0:
+        print("Command executed successfully")
+    else:
+        error_message = stderr.read().decode('utf-8').strip()
+        print(f"Command failed with error: {error_message}")
 
     stdin, stdout, stderr = ssh.exec_command(
         'sudo mv credentials /home/ubuntu')
 
     # Wait for the command to complete
-    stdout.channel.recv_exit_status()
+    exit_status = stdout.channel.recv_exit_status()
+        
+    # Print the action result
+    if exit_status == 0:
+        print("Command executed successfully")
+    else:
+        error_message = stderr.read().decode('utf-8').strip()
+        print(f"Command failed with error: {error_message}")
+    
     stdin, stdout, stderr = ssh.exec_command('sudo mv config /home/ubuntu')
 
     # Wait for the command to complete
-    stdout.channel.recv_exit_status()
+    exit_status = stdout.channel.recv_exit_status()
+
+    # Print the action result
+    if exit_status == 0:
+        print("Command executed successfully")
+    else:
+        error_message = stderr.read().decode('utf-8').strip()
+        print(f"Command failed with error: {error_message}")
+    
+    
     stdin, stdout, stderr = ssh.exec_command(
         'sudo mv InstallWorker.sh /home/ubuntu')
 
     # Wait for the command to complete
-    stdout.channel.recv_exit_status()
+    exit_status = stdout.channel.recv_exit_status()
+
+    # Print the action result
+    if exit_status == 0:
+        print("Command executed successfully")
+    else:
+        error_message = stderr.read().decode('utf-8').strip()
+        print(f"Command failed with error: {error_message}")
 
     ssh.exec_command("sudo bash /home/ubuntu/InstallWorker.sh")
+    
+    # Wait for the command to complete
+    exit_status = stdout.channel.recv_exit_status()
+        
+    # Print the action result
+    if exit_status == 0:
+        print("Command executed successfully")
+    else:
+        error_message = stderr.read().decode('utf-8').strip()
+        print(f"Command failed with error: {error_message}")
 
     ssh.close()
