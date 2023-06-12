@@ -18,4 +18,6 @@ git clone https://github.com/AmitItzhaki252/CloudHasher.git
 
 cd CloudHasher/Endpoint
 
-sudo python3 -m flask run --host=0.0.0.0
+python3 -c "import flasgger"
+
+sudo nohup python3 -m flask run --host=0.0.0.0 > log.txt 2>&1 &

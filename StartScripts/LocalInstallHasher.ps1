@@ -59,6 +59,7 @@ $RUN_INSTANCES = aws ec2 run-instances --image-id $UBUNTU_20_04_AMI --count 2 --
 
 
 $RUN_INSTANCES_Convert = $RUN_INSTANCES | ConvertFrom-Json
+
 $INSTANCE1_ID = $RUN_INSTANCES_Convert.Instances[0].InstanceId
 $INSTANCE2_ID = $RUN_INSTANCES_Convert.Instances[1].InstanceId
 
@@ -74,7 +75,12 @@ $PUBLIC_IP1 = $Describe_Instance1_Convert.Reservations[0].Instances[0].PublicIpA
 # Get public IP of 2 instance
 $Describe_Instance2 = aws ec2 describe-instances --instance-ids $INSTANCE2_ID
 $Describe_Instance2_Convert = $Describe_Instance2 | ConvertFrom-Json
-$PUBLIC_IP2 = $Describe_Instance2_Convert.Reservations[0].Instances[1].PublicIpAddress
+$PUBLIC_IP2 = $Describe_Instance2_Convert.Reservations[0].Instances[0].PublicIpAddress
+
+echo "IP:"
+$PUBLIC_IP2
+$PUBLIC_IP2
+$PUBLIC_IP2
 
 # Creates the public IPs file
 $IPs = @{
@@ -94,11 +100,23 @@ scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" public_
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./credentials ubuntu@${PUBLIC_IP1}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./config ubuntu@${PUBLIC_IP1}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./InstallEndpoint.sh ubuntu@${PUBLIC_IP1}:/home/ubuntu
+
 ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${PUBLIC_IP1} "sudo bash /home/ubuntu/InstallEndpoint.sh"
 
+ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${PUBLIC_IP1} "sudo bash /home/ubuntu/InstallEndpoint.sh"
+
+echo "1 is up"
+
+$PUBLIC_IP2
 # Copy script and execute it on instance 2
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" public_ips.json ubuntu@${PUBLIC_IP2}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./credentials ubuntu@${PUBLIC_IP2}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./config ubuntu@${PUBLIC_IP2}:/home/ubuntu
 scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ./InstallEndpoint.sh ubuntu@${PUBLIC_IP2}:/home/ubuntu
+
+
 ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${PUBLIC_IP2} "sudo bash /home/ubuntu/InstallEndpoint.sh"
+
+ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${PUBLIC_IP2} "sudo bash /home/ubuntu/InstallEndpoint.sh"
+
+echo "2 is up"
