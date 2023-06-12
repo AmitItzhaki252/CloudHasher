@@ -37,13 +37,14 @@ with open("worker_public_ips.json", "r") as file:
 # Parse the JSON content
 ips = json.loads(ips_json)
 
-dequeue_ip = ips["IP"] + ':5000/'
+#dequeue_ip = ips["IP"] + ':5000/'
+dequeue_ip = '44.212.59.40:5000/'
 
 is_running = True
 retryNumber = 0
 
 while is_running:
-    response = requests.get(dequeue_ip+dequeue_path)
+    response = requests.get('http://'+dequeue_ip+dequeue_path)
 
     if response.status_code != 200:
         print('got error from endpoint')
@@ -62,21 +63,25 @@ while is_running:
     work_id = json_data["workId"]
     iterations = json_data["iterations"]
     base64_data = json_data["data"]
-    destination_ip = json_data["destinationData"]
+    #destination_ip = json_data["destinationData"]
+    destination_ip = dequeue_ip
     
     data = base64.b64decode(base64_data)
-    data = work(data, iterations)
+    data = work(data, int(iterations))
     
     post_data = {
-        'workId': work_id,
-        'finalValue': data
+        "workId": work_id,
+        "finalValue": data
     }
     
-    post_response = requests.post(destination_ip+':5000/'+complete_path, data=post_data)
-    print(f'posted worked data. response status code: {post_response.status_code}')
+    json_post_data = json.dumps(post_data, indent=4, sort_keys=True, default=str)
     
+    #post_response = requests.post('http://'+destination_ip+':5000/'+complete_path, data=post_data)
+    post_response = requests.post('http://'+destination_ip+complete_path, data=json_post_data)
+    print(f'posted worked data. response status code: {post_response.status_code}')
+    print(json_post_data)
 
-kill_worker_report_response = requests.post(dequeue_ip+kill_worker_path)
+kill_worker_report_response = requests.post('http://'+dequeue_ip+kill_worker_path)
 
 try:
     terminate_ec2()

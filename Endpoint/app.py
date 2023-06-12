@@ -74,6 +74,8 @@ def enqueue():
 
     iterations = request.args['iterations']
     data = request.get_data()
+    data = json.loads(data)
+    
     work_id = uuid.uuid4()
 
     if data is None:
