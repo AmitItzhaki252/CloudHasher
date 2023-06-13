@@ -3,6 +3,8 @@ import requests
 import hashlib
 import base64
 import boto3
+import re
+import os
 
 def work(buffer, iterations):
     output = hashlib.sha512(buffer).digest()
@@ -26,6 +28,33 @@ def terminate_ec2():
 #global complete_path
 #global kill_worker_path
 #global retryNumber
+
+try:
+    with open('/home/ubuntu/files/config', 'r') as f:
+        config = f.read()
+except:
+    with open('C:\git\CloudHasher\Endpoint\config', 'r') as f:
+        config = f.read()
+
+region = re.search(r'region\s*=\s*(\S+)', config).group(1)
+
+# Set the AWS region
+os.environ['AWS_DEFAULT_REGION'] = region
+
+try:
+    with open('/home/ubuntu/files/credentials', 'r') as f:
+        aws_credentials = f.read()
+except:
+    with open('C:\git\CloudHasher\Endpoint\credentials', 'r') as f:
+        aws_credentials = f.read()
+
+access_key = re.search(r'aws_access_key_id\s*=\s*(\S+)', aws_credentials).group(1)
+secret_key = re.search(r'aws_secret_access_key\s*=\s*(\S+)', aws_credentials).group(1)
+
+# Set AWS credentials and region as environment variables
+os.environ['AWS_ACCESS_KEY_ID'] = access_key
+os.environ['AWS_SECRET_ACCESS_KEY'] = secret_key
+
 
 dequeue_path = 'dequeue'
 complete_path = 'completed'

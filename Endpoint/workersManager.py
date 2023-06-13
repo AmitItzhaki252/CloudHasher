@@ -257,6 +257,28 @@ def start_worker(manager_ip, my_ip):
         print('script file copied successfully.')
     else:
         print('script file copying failed.')
+        
+    server_file_path = '/home/ubuntu/credentials'
+    ssh_session_dest_path = '/home/ubuntu/files'
+    scp_command = f'scp -o ConnectionAttempts=10 -o StrictHostKeyChecking=no -i {key_filename} {server_file_path} {username}@{hostname}:{ssh_session_dest_path}'
+
+    exit_status = subprocess.call(scp_command, shell=True)
+
+    if exit_status == 0:
+        print('credentials file copied successfully.')
+    else:
+        print('credentials file copying failed.')
+
+    server_file_path = '/home/ubuntu/config'
+    ssh_session_dest_path = '/home/ubuntu/files'
+    scp_command = f'scp -o ConnectionAttempts=10 -o StrictHostKeyChecking=no -i {key_filename} {server_file_path} {username}@{hostname}:{ssh_session_dest_path}'
+
+    exit_status = subprocess.call(scp_command, shell=True)
+
+    if exit_status == 0:
+        print('config file copied successfully.')
+    else:
+        print('config file copying failed.')
 
     #run install worker script
     scp_command = f'sudo ssh -o ConnectionAttempts=10 -o StrictHostKeyChecking=no -i {key_filename} {username}@{hostname} sudo bash {ssh_session_dest_path}/{server_file_path}'
