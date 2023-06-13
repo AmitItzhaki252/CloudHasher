@@ -74,7 +74,6 @@ def enqueue():
 
     iterations = request.args['iterations']
     data = request.get_data()
-    data = json.loads(data)
     
     work_id = uuid.uuid4()
 
@@ -139,6 +138,9 @@ def completed():
     global results
 
     data = request.get_json()
+    #print(data)
+    #data = json.loads(data)
+    print(data)
     results.put(data)
 
     return 'Successfully enqueued data'

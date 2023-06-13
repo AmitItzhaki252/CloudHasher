@@ -7,3 +7,6 @@ Worker/worker_public_ips.json
 *.pyc
 StartScripts/public_ips.json
 *.pyc
+*.pyc
+Endpoint/__pycache__/workersManager.cpython-39.pyc
+Endpoint/__pycache__/app.cpython-39.pyc

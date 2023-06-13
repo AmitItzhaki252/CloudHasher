@@ -21,30 +21,35 @@ def terminate_ec2():
     ec2_client.terminate_instances(InstanceIds=[instance_id])
     pass
 
-global ip
-global dequeue_path
-global complete_path
-global kill_worker_path
-global retryNumber
+#global ip
+#global dequeue_path
+#global complete_path
+#global kill_worker_path
+#global retryNumber
 
 dequeue_path = 'dequeue'
 complete_path = 'completed'
 kill_worker_path = 'killWorker'
 
-with open("worker_public_ips.json", "r") as file:
-    ips_json = file.read()
+headers = {"Content-Type": "application/json"} 
+
+try:
+    with open("/home/ubuntu/files/worker_public_ips.json", "r") as file:
+        ips_json = file.read()
+except:
+    with open("worker_public_ips.json", "r") as file:
+        ips_json = file.read()
 
 # Parse the JSON content
 ips = json.loads(ips_json)
 
-#dequeue_ip = ips["IP"] + ':5000/'
-dequeue_ip = '44.212.59.40:5000/'
+dequeue_ip = ips["IP"] + ':5000/'
 
 is_running = True
 retryNumber = 0
 
 while is_running:
-    response = requests.get('http://'+dequeue_ip+dequeue_path)
+    response = requests.get('http://'+dequeue_ip+dequeue_path, headers=headers)
 
     if response.status_code != 200:
         print('got error from endpoint')
@@ -63,8 +68,7 @@ while is_running:
     work_id = json_data["workId"]
     iterations = json_data["iterations"]
     base64_data = json_data["data"]
-    #destination_ip = json_data["destinationData"]
-    destination_ip = dequeue_ip
+    destination_ip = json_data["destinationIp"] +':5000/'
     
     data = base64.b64decode(base64_data)
     data = work(data, int(iterations))
@@ -76,12 +80,11 @@ while is_running:
     
     json_post_data = json.dumps(post_data, indent=4, sort_keys=True, default=str)
     
-    #post_response = requests.post('http://'+destination_ip+':5000/'+complete_path, data=post_data)
-    post_response = requests.post('http://'+destination_ip+complete_path, data=json_post_data)
+    post_response = requests.post('http://'+destination_ip+complete_path, data=json_post_data, headers=headers)
     print(f'posted worked data. response status code: {post_response.status_code}')
     print(json_post_data)
 
-kill_worker_report_response = requests.post('http://'+dequeue_ip+kill_worker_path)
+kill_worker_report_response = requests.post('http://'+dequeue_ip+kill_worker_path, headers=headers)
 
 try:
     terminate_ec2()

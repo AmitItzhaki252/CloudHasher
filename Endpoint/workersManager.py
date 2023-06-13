@@ -6,14 +6,18 @@ import paramiko
 import threading
 import os
 import stat
-import configparser
+from paramiko import SSHClient, SFTPClient
 import re
 
 global maxWorkersNumber
 global currentWorkersNumber
+global latest_queue_size
+global latest_manager_ip
 
 maxWorkersNumber = 10
 currentWorkersNumber = 0
+latest_queue_size = 0
+latest_manager_ip = ''
 
 global my_ip
 
@@ -43,11 +47,30 @@ secret_key = re.search(r'aws_secret_access_key\s*=\s*(\S+)', aws_credentials).gr
 os.environ['AWS_ACCESS_KEY_ID'] = access_key
 os.environ['AWS_SECRET_ACCESS_KEY'] = secret_key
 
+def periodic_checker():
+    global latest_queue_size
+    global latest_manager_ip
+    
+    if latest_queue_size > 10 and maxWorkersNumber > currentWorkersNumber:
+        start_new_worker(latest_manager_ip)
+        
+    time.sleep(30)
+    periodic_checker()
+
+
+timer_thread = threading.Thread(target=periodic_checker)
+timer_thread.start()
+
 def message_added(queue_len, manager_ip):
     global currentWorkersNumber
     global maxWorkersNumber
+    global latest_queue_size
+    global latest_manager_ip
 
-    if (currentWorkersNumber == 0 or queue_len > 1) and maxWorkersNumber > currentWorkersNumber:
+    latest_queue_size = queue_len
+    latest_manager_ip = manager_ip
+    
+    if (currentWorkersNumber == 0 and queue_len == 1) and maxWorkersNumber > currentWorkersNumber:
         currentWorkersNumber += 1
         thread = threading.Thread(target=start_new_worker, args=[manager_ip])
         thread.start()
@@ -62,15 +85,15 @@ def decrease_workers():
 def start_new_worker(manager_ip):
     global currentWorkersNumber
 
-    # try:
-    my_ip = get_public_ip()
-    start_worker(manager_ip, my_ip)
-    print('Worker started')
-    # except:
-    #     print('creating worker failed')
-    #     currentWorkersNumber -= 1
-    #     if currentWorkersNumber == 0:
-    #         start_new_worker(manager_ip)
+    try:
+        my_ip = get_public_ip()
+        start_worker(manager_ip, my_ip)
+        print('Worker started')
+    except:
+        print('creating worker failed')
+        currentWorkersNumber -= 1
+        if currentWorkersNumber == 0:
+            start_new_worker(manager_ip)
 
 
 def get_public_ip():
@@ -85,40 +108,6 @@ def get_public_ip():
 
 
 def start_worker(manager_ip, my_ip):
-    # # Read AWS credentials from file
-    # credentials_path = os.path.expanduser("/home/ubuntu/credentials")
-    # print(credentials_path)
-    # config_path = os.path.expanduser("/home/ubuntu/credentials")
-
-    # # Set AWS credentials and region using environment variables
-    # os.environ["AWS_SHARED_CREDENTIALS_FILE"] = credentials_path
-    # os.environ["AWS_CONFIG_FILE"] = config_path
-
-    # print(os.environ["AWS_SHARED_CREDENTIALS_FILE"])
-    # print(os.environ["AWS_CONFIG_FILE"])
-
-    # # Create an EC2 client
-    # try:
-    #     ec2 = boto3.client('ec2')
-        
-    #     # Generate a key pair
-    #     key_name = f"Cloud-Computing-{int(time.time())}"
-    #     key_response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
-    #     key_pem = f"{key_name}.pem"
-    #     print('key was created')
-    # except:
-    #     # Read AWS credentials from file
-    #     credentials_path = os.path.expanduser("C:\git\CloudHasher\Endpoint\credentials")
-    #     print(credentials_path)
-    #     config_path = os.path.expanduser("C:\git\CloudHasher\Endpoint\config")
-
-    #     # Set AWS credentials and region using environment variables
-    #     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = credentials_path
-    #     os.environ["AWS_CONFIG_FILE"] = config_path
-        
-    #     ec2 = boto3.client('ec2')
-        
-    # Generate a key pair
     ec2 = boto3.client('ec2')
     key_name = f"Cloud-Computing-{int(time.time())}"
     key_response = ec2.create_key_pair(KeyName=key_name, KeyType='ed25519')
@@ -224,9 +213,13 @@ def start_worker(manager_ip, my_ip):
 
 def run_scripts_on_remote(ssh, public_ip1, key_pem):
     ssh.connect(public_ip1, username='ubuntu', key_filename=key_pem)
+    sftp = SFTPClient(ssh.get_transport())
+    
+    stdin, stdout, stderr = ssh.exec_command('sudo mkdir -m 777 /home/ubuntu/files')
+    exit_status = stdout.channel.recv_exit_status()
     
     stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv worker_public_ips.json /home/ubuntu')
+        'sudo mv /home/ubuntu/CloudHasher/Endpoint/worker_public_ips.json /home/ubuntu/files')
 
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -238,8 +231,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
         
-        stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\\git\\CloudHasher\\Endpoint\\worker_public_ips.json /home/ubuntu')
+        sftp.put('C:\\git\\CloudHasher\\Endpoint\\worker_public_ips.json','/home/ubuntu/files')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -253,7 +245,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         
 
     stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv /home/ubuntu/credentials /home/ubuntu')
+        'sudo mv /home/ubuntu/credentials /home/ubuntu/files')
 
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -265,8 +257,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
         
-        stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\\git\\CloudHasher\\Endpoint\\credentials /home/ubuntu')
+        sftp.put('C:\\git\\CloudHasher\\Endpoint\\credentials','/home/ubuntu/files')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -279,7 +270,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
             print(f"Command failed with error: {error_message}")
         
     
-    stdin, stdout, stderr = ssh.exec_command('sudo mv /home/ubuntu/config /home/ubuntu')
+    stdin, stdout, stderr = ssh.exec_command('sudo mv /home/ubuntu/config /home/ubuntu/files')
 
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -291,8 +282,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
         
-        stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\\git\\CloudHasher\\Endpoint\\config /home/ubuntu')
+        sftp.put('C:\\git\\CloudHasher\\Endpoint\\config','/home/ubuntu/files')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -306,7 +296,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     
     
     stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv InstallWorker.sh /home/ubuntu')
+        'sudo mv InstallWorker.sh /home/ubuntu/files')
 
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -318,8 +308,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
         
-        stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv C:\\git\\CloudHasher\\Endpoint\\InstallWorker.sh /home/ubuntu')
+        sftp.put('C:\\git\\CloudHasher\\Endpoint\\InstallWorker.sh','/home/ubuntu/files')
 
         # Wait for the command to complete
         exit_status = stdout.channel.recv_exit_status()
@@ -331,7 +320,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
             error_message = stderr.read().decode('utf-8').strip()
             print(f"Command failed with error: {error_message}")
 
-    ssh.exec_command("sudo bash /home/ubuntu/InstallWorker.sh")
+    ssh.exec_command("sudo bash /home/ubuntu/files/InstallWorker.sh")
     
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -343,7 +332,7 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
         
-        ssh.exec_command("sudo bash /home/ubuntu/InstallWorker.sh")
+        ssh.exec_command("sudo bash /home/ubuntu/files/InstallWorker.sh")
     
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
@@ -354,5 +343,6 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     else:
         error_message = stderr.read().decode('utf-8').strip()
         print(f"Command failed with error: {error_message}")
-
+    
+    sftp.close()
     ssh.close()
