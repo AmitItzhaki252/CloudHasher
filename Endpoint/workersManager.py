@@ -135,7 +135,7 @@ def start_worker(manager_ip, my_ip):
         # Remove inheritance
         subprocess.call(['icacls.exe', key_pem, '/inheritance:r'])
     except:
-        os.chmod(key_pem, 0o777)
+        os.chmod(key_pem, 0o600)
 
     # Create a security group
     security_group_name = f"scriptSG-{int(time.time())}"
