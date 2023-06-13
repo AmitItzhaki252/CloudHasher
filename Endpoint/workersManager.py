@@ -259,7 +259,7 @@ def start_worker(manager_ip, my_ip):
         print('script file copying failed.')
 
     #run install worker script
-    scp_command = f'ssh -o ConnectionAttempts=10 -o StrictHostKeyChecking=no -i {key_filename} {username}@{hostname} sudo bash {ssh_session_dest_path}/{server_file_path}'
+    scp_command = f'sudo ssh -o ConnectionAttempts=10 -o StrictHostKeyChecking=no -i {key_filename} {username}@{hostname} sudo bash {ssh_session_dest_path}/{server_file_path}'
 
     exit_status = subprocess.call(scp_command, shell=True)
 
