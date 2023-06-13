@@ -90,5 +90,6 @@ kill_worker_report_response = requests.post('http://'+dequeue_ip+kill_worker_pat
 
 try:
     terminate_ec2()
-except:
+except Exception as e:
     print('terminating self have failed')
+    print(e)
