@@ -224,13 +224,31 @@ def run_scripts_on_remote(public_ip1, key_pem):
     ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
     
     try:
-        ssh.connect(public_ip1, username='ubuntu', key_filename=key_pem)
+        ssh.connect(username='ubuntu',hostname=public_ip1, key_filename=key_pem)
+        sftp = SFTPClient(ssh.get_transport())
     except Exception as e:
         print(e)
-    sftp = SFTPClient(ssh.get_transport())
     
-    stdin, stdout, stderr = ssh.exec_command('sudo mkdir -m 777 /home/ubuntu/files')
-    exit_status = stdout.channel.recv_exit_status()
+    # stdin, stdout, stderr = ssh.exec_command('sudo mkdir -m 777 /home/ubuntu/files')
+    # exit_status = stdout.channel.recv_exit_status()
+    
+    # SSH connection details
+    username = 'ubuntu'
+    hostname = public_ip1
+    key_filename = key_pem
+
+    # Command to execute on the remote server
+    command = f'ssh -i {key_filename} {username}@{hostname} sudo mkdir -m 777 /home/ubuntu/files'
+
+    # Execute the command using subprocess
+    exit_status = subprocess.call(command, shell=True)
+
+    if exit_status == 0:
+        print("Directory created successfully")
+    else:
+        print("Failed to create directory")
+    
+    
 
     # Use scp to copy the file from the server to the SSH session
     server_file_path = '/home/ubuntu/CloudHasher/Endpoint/worker_public_ips.json'
