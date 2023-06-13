@@ -1,7 +1,7 @@
-# AmitGarageParking
- Exrcise 1 - Cloud computing
+# Cloud Hasher
+ Exrcise 2 - Cloud computing
 
-Make sure you have credential file and config file for region. 
+Make sure you have credential file and config file for region in the StartScripts folder.
 And then just run the LocalInstallGarage.ps1 from your powershell console on windows.
 
 

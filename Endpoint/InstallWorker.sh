@@ -22,4 +22,4 @@ git clone https://github.com/AmitItzhaki252/CloudHasher.git
 
 cd CloudHasher/Worker
 
-sudo nohup python3 -m flask run --host=0.0.0.0 > log.txt 2>&1 &
+sudo nohup python3 -m app.py > log.txt 2>&1 &

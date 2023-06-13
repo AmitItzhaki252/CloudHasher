@@ -49,7 +49,9 @@ is_running = True
 retryNumber = 0
 
 while is_running:
-    response = requests.get('http://'+dequeue_ip+dequeue_path, headers=headers)
+    req_path = 'http://'+dequeue_ip+dequeue_path
+    print(req_path)
+    response = requests.get(req_path)
 
     if response.status_code != 200:
         print('got error from endpoint')
