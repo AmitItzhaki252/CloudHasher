@@ -23,12 +23,6 @@ def terminate_ec2():
     ec2_client.terminate_instances(InstanceIds=[instance_id])
     pass
 
-#global ip
-#global dequeue_path
-#global complete_path
-#global kill_worker_path
-#global retryNumber
-
 try:
     with open('/home/ubuntu/files/config', 'r') as f:
         config = f.read()
