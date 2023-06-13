@@ -281,6 +281,8 @@ def start_worker(manager_ip, my_ip):
         print('config file copying failed.')
 
     #run install worker script
+    server_file_path = 'InstallWorker.sh'
+    ssh_session_dest_path = '/home/ubuntu'
     scp_command = f'sudo ssh -o ConnectionAttempts=10 -o StrictHostKeyChecking=no -i {key_filename} {username}@{hostname} sudo bash {ssh_session_dest_path}/{server_file_path}'
 
     exit_status = subprocess.call(scp_command, shell=True)
