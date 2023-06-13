@@ -1,7 +1,7 @@
 # Cloud Hasher
  Exrcise 2 - Cloud computing
 
-Make sure you have credential file and config file for region in the StartScripts folder.
+Make sure you have credential file and config file for region in the StartScripts and Endpoint folders.
 And then just run the LocalInstallGarage.ps1 from your powershell console on windows.
 
 
