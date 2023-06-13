@@ -8,6 +8,7 @@ import os
 import stat
 from paramiko import SSHClient, SFTPClient
 import re
+import subprocess
 
 global maxWorkersNumber
 global currentWorkersNumber
@@ -217,12 +218,18 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
     
     stdin, stdout, stderr = ssh.exec_command('sudo mkdir -m 777 /home/ubuntu/files')
     exit_status = stdout.channel.recv_exit_status()
-    
-    stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv /home/ubuntu/CloudHasher/Endpoint/worker_public_ips.json /home/ubuntu/files')
 
-    # Wait for the command to complete
-    exit_status = stdout.channel.recv_exit_status()
+    # Use scp to copy the file from the server to the SSH session
+    server_file_path = '/home/ubuntu/CloudHasher/Endpoint/worker_public_ips.json'
+    ssh_session_dest_path = '/home/ubuntu/files'
+    scp_command = f'sudo scp {server_file_path} ubuntu@{ssh.get_transport().getpeername()[0]}:{ssh_session_dest_path}'
+
+    exit_status = subprocess.call(scp_command, shell=True)
+
+    if exit_status == 0:
+        print('File copied successfully.')
+    else:
+        print('File copying failed.')
     
     # Print the action result
     if exit_status == 0:
@@ -242,13 +249,12 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         else:
             error_message = stderr.read().decode('utf-8').strip()
             print(f"Command failed with error: {error_message}")
-        
-
-    stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv /home/ubuntu/credentials /home/ubuntu/files')
-
-    # Wait for the command to complete
-    exit_status = stdout.channel.recv_exit_status()
+    
+    # Use scp to copy the file from the server to the SSH session
+    server_file_path = '/home/ubuntu/credentials'
+    ssh_session_dest_path = '/home/ubuntu/files'
+    scp_command = f'sudo scp {server_file_path} ubuntu@{ssh.get_transport().getpeername()[0]}:{ssh_session_dest_path}'
+    exit_status = subprocess.call(scp_command, shell=True)
         
     # Print the action result
     if exit_status == 0:
@@ -270,10 +276,11 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
             print(f"Command failed with error: {error_message}")
         
     
-    stdin, stdout, stderr = ssh.exec_command('sudo mv /home/ubuntu/config /home/ubuntu/files')
-
-    # Wait for the command to complete
-    exit_status = stdout.channel.recv_exit_status()
+    # Use scp to copy the file from the server to the SSH session
+    server_file_path = '/home/ubuntu/config'
+    ssh_session_dest_path = '/home/ubuntu/files'
+    scp_command = f'sudo scp {server_file_path} ubuntu@{ssh.get_transport().getpeername()[0]}:{ssh_session_dest_path}'
+    exit_status = subprocess.call(scp_command, shell=True)
 
     # Print the action result
     if exit_status == 0:
@@ -293,11 +300,13 @@ def run_scripts_on_remote(ssh, public_ip1, key_pem):
         else:
             error_message = stderr.read().decode('utf-8').strip()
             print(f"Command failed with error: {error_message}")
-    
-    
-    stdin, stdout, stderr = ssh.exec_command(
-        'sudo mv InstallWorker.sh /home/ubuntu/files')
 
+    # Use scp to copy the file from the server to the SSH session
+    server_file_path = '/home/ubuntu/CloudHasher/Endpoint/InstallWorker.sh'
+    ssh_session_dest_path = '/home/ubuntu/files'
+    scp_command = f'sudo scp {server_file_path} ubuntu@{ssh.get_transport().getpeername()[0]}:{ssh_session_dest_path}'
+    exit_status = subprocess.call(scp_command, shell=True)
+    
     # Wait for the command to complete
     exit_status = stdout.channel.recv_exit_status()
 
