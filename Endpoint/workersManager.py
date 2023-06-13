@@ -91,10 +91,10 @@ def start_new_worker(manager_ip):
         start_worker(manager_ip, my_ip)
         print('Worker started')
     except:
-        print('creating worker failed')
-        currentWorkersNumber -= 1
-        if currentWorkersNumber == 0:
-            start_new_worker(manager_ip)
+       print('creating worker failed')
+       currentWorkersNumber -= 1
+       if currentWorkersNumber == 0:
+           start_new_worker(manager_ip)
 
 
 def get_public_ip():
@@ -180,7 +180,7 @@ def start_worker(manager_ip, my_ip):
     instance1_id = instances[0]['InstanceId']
 
     describe_instance1 = ec2.describe_instances(InstanceIds=[instance1_id])
-    public_ip1 = describe_instance1['Reservations'][0]['Instances'][0]['PublicIpAddress']
+    public_ip1 = describe_instance1['Reservations'][0]['Instances'][0]['PublicIpAddress'].strip()
 
     # Create the public IPs file
     ips = {
@@ -193,27 +193,40 @@ def start_worker(manager_ip, my_ip):
 
     paramiko.util.loglevel = paramiko.util.DEBUG
 
-    # Create an SSH client
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
-
     # Copy and execute the script on the first instance
     print(key_pem)
     #ssh.connect(public_ip1, username='ubuntu', key_filename=key_pem, look_for_keys=True, allow_agent=False)
     try:
-        run_scripts_on_remote(ssh, public_ip1, key_pem)
+        run_scripts_on_remote(public_ip1, key_pem)
     except:
         print('retrying')
         time.sleep(5)
 
-        run_scripts_on_remote(ssh, public_ip1, key_pem)
+        run_scripts_on_remote(public_ip1, key_pem)
 
     print('worker is running')
 
 
-def run_scripts_on_remote(ssh, public_ip1, key_pem):
-    ssh.connect(public_ip1, username='ubuntu', key_filename=key_pem)
+def run_scripts_on_remote(public_ip1, key_pem):
+    try:
+        with open(f'/home/ubuntu/CloudHasher/Endpoint/{key_pem}', 'r') as f:
+            print(f.read())
+            key_pem = f'/home/ubuntu/CloudHasher/Endpoint/{key_pem}'
+    except Exception as e:
+        print(e)
+        with open(key_pem, 'r') as f:
+            print(f.read())
+    
+    
+    # Create an SSH client
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+    
+    try:
+        ssh.connect(public_ip1, username='ubuntu', key_filename=key_pem)
+    except Exception as e:
+        print(e)
     sftp = SFTPClient(ssh.get_transport())
     
     stdin, stdout, stderr = ssh.exec_command('sudo mkdir -m 777 /home/ubuntu/files')
